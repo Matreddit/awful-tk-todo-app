@@ -183,7 +183,7 @@ class TodoApp:
         # Create a new Toplevel window
         help_window = Toplevel(self.master)
         help_window.title("Help - Arbeiten Kurwa")
-        help_window.geometry("600x750") # Set a reasonable size
+        help_window.geometry("600x760") # Set a reasonable size
         help_window.transient(self.master) # Make it appear on top of the main window
         help_window.grab_set() # Make it modal (user must interact with it before main window)
 
@@ -219,6 +219,7 @@ HOW TO USE:
 - After saving, the app updates the title with a random shape
 - You shouldn't have two same subtasks in one task
 - You absolutely shouldn't have two same main tasks, they will conflict
+- 'Pin' is for poor Windows users who can't just 'Always on Top' the window 
 - Better use notepad and copy-paste to save your sanity
 - You should explore example.todo file from gitgub page. 
 - You can find this app and example of .todo file on github page:
