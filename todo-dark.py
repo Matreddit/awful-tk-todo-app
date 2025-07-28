@@ -2,15 +2,21 @@ from tkinter import *
 from tkinter import filedialog, messagebox
 import pickle
 import os
-import time
+# import time
+import random
 
 class TodoApp:
     def __init__(self, master):
-        # File tracking
-        self.current_file = ""     # path of the open/save‑as file
-
         self.master = master
-        master.title("Arbeiten Kurwa")
+
+        # self.different_shapes = ['☺', '☻', '♥', '♦', '♣', '♠', '•', '◘', '○', '◙', '♂', '♀', '♪', '♫', '☼', '►', '◄', '▲', '▼'] 
+        self.different_shapes = ['☻', '♥', '▲', '◄', '▲', '▼', '■', '♫', '☼']
+        self.last_shape = None
+        
+        self.default_title = "Arbeiten Kurwa"
+        self.current_file = ""     # path of the open/save‑as file
+        self.master.title(self.default_title)
+        # master.title("Arbeiten Kurwa")
         # master.resizable(width=False, height=True)
 
         # --- DARK THEME CONFIGURATION ---
@@ -67,6 +73,7 @@ class TodoApp:
 
         # Apply dark theme colors to Label
         self.lblMainTask = Label(navFrame, font=("Arial bold", 16),
+                                 width=36,
                                  bg=self.dark_mode_colors["bg"],
                                  fg=self.dark_mode_colors["label_fg"])
         self.lblMainTask.pack(side=LEFT, expand=True)
@@ -110,11 +117,25 @@ class TodoApp:
         Button(toolFrame, text="Help", command=self.show_help_window,
                bg=self.dark_mode_colors["button_bg"], fg=self.dark_mode_colors["button_fg"],
                activebackground=self.dark_mode_colors["active_bg"], activeforeground=self.dark_mode_colors["button_fg"],
-               relief=FLAT).grid(row=0, column=4, padx=5)
-        Button(toolFrame, text="Load Text → UI", command=self.load_all_tasks, width=20,
+               relief=FLAT).grid(row=0, column=4, padx=(5, 0))
+        # Always on top checkbox for poor windows users
+        self.isOnTopVar = BooleanVar(value=False)
+        self.cbIsOnTop = Checkbutton(toolFrame, text='Pin',
+                            wraplength=700, justify=LEFT,
+                            variable=self.isOnTopVar,
+                            command=lambda: self.master.attributes("-topmost", self.isOnTopVar.get()),
+                            bg=self.dark_mode_colors["checkbutton_bg"], # Background
+                            fg=self.dark_mode_colors["checkbutton_fg"], # Foreground
+                            selectcolor=self.dark_mode_colors["button_bg"], # Color of the checkmark box itself when checked
+                            activebackground=self.dark_mode_colors["active_bg"], # Background when active/hovered
+                            activeforeground=self.dark_mode_colors["checkbutton_fg"], # Foreground when active/hovered
+                            relief=FLAT) # Flat relief
+        self.cbIsOnTop.grid(row=0, column=5, padx=0)
+
+        Button(toolFrame, text="Load Text → UI", command=self.load_all_tasks, width=16,
                bg=self.dark_mode_colors["button_bg"], fg=self.dark_mode_colors["button_fg"],
                activebackground=self.dark_mode_colors["active_bg"], activeforeground=self.dark_mode_colors["button_fg"],
-               relief=FLAT).grid(row=0, column=5, sticky='e', padx=5)
+               relief=FLAT).grid(row=0, column=6, sticky='e', padx=0)
 
 
         # Apply dark theme colors to Text widget
@@ -124,7 +145,7 @@ class TodoApp:
                             insertbackground=self.dark_mode_colors["fg"], # Cursor color
                             selectbackground=self.dark_mode_colors["select_bg"], # Text selection color
                             relief=FLAT) # Flat relief can look better
-        self.textBox.pack(fill=BOTH, expand=True, pady=(0,5))
+        self.textBox.pack(fill=BOTH, expand=True, pady=(0,5), padx=(5,0))
 
         # Keyboard shortcut for saving
         master.bind_all("<Control-s>", lambda e: self.save())
@@ -162,7 +183,7 @@ class TodoApp:
         # Create a new Toplevel window
         help_window = Toplevel(self.master)
         help_window.title("Help - Arbeiten Kurwa")
-        help_window.geometry("600x666") # Set a reasonable size
+        help_window.geometry("600x750") # Set a reasonable size
         help_window.transient(self.master) # Make it appear on top of the main window
         help_window.grab_set() # Make it modal (user must interact with it before main window)
 
@@ -195,8 +216,14 @@ HOW TO USE:
 4. TIPS
 - It's time to remember about CapsLock key
 - Don't forget to spam Ctrl+S after every change
-- "Help" shows this window again
-- You can see source code and download example of .todo on github page:
+- After saving, the app updates the title with a random shape
+- You shouldn't have two same subtasks in one task
+- You absolutely shouldn't have two same main tasks, they will conflict
+- Better use notepad and copy-paste to save your sanity
+- You should explore example.todo file from gitgub page. 
+- You can find this app and example of .todo file on github page:
+  https://github.com/Matreddit/awful-tk-todo-app
+- App updates may exist, but you should not expect them
         """
 
         # Create a Text widget for the help content
@@ -267,7 +294,7 @@ HOW TO USE:
         # 3) Split into main+subs
         self.all_tasks = self.split_into_mains(lines)
         if not self.all_tasks:
-            self.all_tasks = [["DEFAULT", ["Task A", "Task B", "Task C"]]]
+            self.all_tasks = [["DO SOMETHING!", ["Think about life", "Go to sleep", "Wake up", "Repeat"]]]
 
         # 4) Reset index & load
         self.current_main = 0
@@ -399,7 +426,8 @@ HOW TO USE:
             # for new Save feature
             self.current_file = ""
             self.btnSave.config(state=DISABLED)
-            self.master.title("Arbeiten Kurwa")
+            self.master.title(self.default_title)
+            self.last_shape = None
             # Clear all state
             self.textBox.delete("1.0", END)
             self.saved_states.clear()
@@ -422,15 +450,23 @@ HOW TO USE:
             with open(self.current_file, 'wb') as f:
                 pickle.dump({
                     'text':   self.textBox.get("1.0", END),
-                    'states': self.saved_states
+                    'states': self.saved_states,
+                    'current_main': self.current_main # to open on the same task next time
                 }, f)
         except Exception as e:
             messagebox.showerror("Save failed", str(e))
             return
 
         # update timestamp in title
-        ts = time.strftime("%H:%M:%S")
-        self.master.title(f"Arbeiten Kurwa • ({ts})")
+        # ts = time.strftime("%H:%M:%S")                    # OLD
+        # self.master.title(f"Arbeiten Kurwa • ({ts})")     # OLD
+        
+        # Pick a random shape and append it
+        fname = os.path.basename(self.current_file)
+        available_shapes = [s for s in self.different_shapes if s != self.last_shape]
+        shape = random.choice(available_shapes)
+        self.last_shape = shape
+        self.master.title(f"{fname} {shape}")
 
     def save_as(self):
         """Prompt for file, then save."""
@@ -443,8 +479,14 @@ HOW TO USE:
         self.current_file = path
         # now that we have a path, enable the Save button
         self.btnSave.config(state=NORMAL)
+
+        # set title to filename only
+        fname = os.path.basename(self.current_file)
+        self.master.title(fname)
+
         # and perform the actual save
         self.save()
+
 
     # old method for single Save button
     # def save_project(self):
@@ -490,7 +532,14 @@ HOW TO USE:
         # after loading data and before load_all_tasks():
         self.current_file = path            # for new Save
         self.btnSave.config(state=NORMAL)   # for new Save
+        # Show filename only
+        fname = os.path.basename(self.current_file)
+        self.master.title(fname)
+        self.last_shape = None # reset last_shape for new file
+
         self.load_all_tasks()
+        self.current_main = data.get('current_main', 0) # for saving current task
+        self.load_current_main()                        # for saving current task
 
 if __name__ == '__main__':
     root = Tk()
