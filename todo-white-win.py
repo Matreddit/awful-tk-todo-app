@@ -443,6 +443,9 @@ if __name__ == '__main__':
             ctypes.windll.user32.SetProcessDPIAware()  # For Windows 7+
         except:
             pass
+
+    # ————————————————————————————————————————————————————————————
+    # Create the main window
     # ————————————————————————————————————————————————————————————
     root = Tk()
     app = TodoApp(root)
@@ -457,13 +460,13 @@ if __name__ == '__main__':
     else:
         # running in normal Python
         base_path = os.path.dirname(__file__)
-
     icon_path = os.path.join(base_path, 'GDR.png')
     img = PhotoImage(file=icon_path)
     root.iconphoto(False, img)
+
     # ————————————————————————————————————————————————————————————
-
-
+    # to be able to open .todo files directly
+    # ————————————————————————————————————————————————————————————
     # If program was launched with a .todo filename, open it immediately
     if len(sys.argv) > 1:
         incoming = sys.argv[1]

@@ -6,7 +6,7 @@ import os
 import random
 import sys # for command line args
 import ctypes # make app not blurry on high DPI screens for Windows users
-
+from ctypes import wintypes # for dark titlebar on Windows
 
 class TodoApp:
     def __init__(self, master):
@@ -546,6 +546,19 @@ HOW TO USE:
         self.current_main = data.get('current_main', 0) # for saving current task
         self.load_current_main()                        # for saving current task
 
+# ————————————————————————————————————————————————————————————
+# make titlebar dark on Windows 10+
+# ————————————————————————————————————————————————————————————
+def set_dark_titlebar(window, enable=True, DWMWA_USE_IMMERSIVE_DARK_MODE = 20):
+    hwnd = ctypes.windll.user32.GetParent(window.winfo_id())
+    value = wintypes.BOOL(enable)
+    ctypes.windll.dwmapi.DwmSetWindowAttribute(
+        hwnd,
+        DWMWA_USE_IMMERSIVE_DARK_MODE,
+        ctypes.byref(value),
+        ctypes.sizeof(value)
+    )
+
 if __name__ == '__main__':
     # ————————————————————————————————————————————————————————————
     # make app not blurry on high DPI screens for Windows users
@@ -557,8 +570,13 @@ if __name__ == '__main__':
             ctypes.windll.user32.SetProcessDPIAware()  # For Windows 7+
         except:
             pass
+
+    # ————————————————————————————————————————————————————————————
+    # Create the main window
     # ————————————————————————————————————————————————————————————
     root = Tk()
+    root.update_idletasks()         # for windows dark titlebar
+    set_dark_titlebar(root, True)   # for windows dark titlebar
     app = TodoApp(root)
 
     # ————————————————————————————————————————————————————————————
@@ -575,12 +593,14 @@ if __name__ == '__main__':
     icon_path = os.path.join(base_path, 'GDR.png')
     img = PhotoImage(file=icon_path)
     root.iconphoto(False, img)
+
     # ————————————————————————————————————————————————————————————
-
-
+    # to be able to open .todo files directly
+    # ————————————————————————————————————————————————————————————
     # If program was launched with a .todo filename, open it immediately
     if len(sys.argv) > 1:
         incoming = sys.argv[1]
         app.open_project(incoming)
+
 
     root.mainloop()
